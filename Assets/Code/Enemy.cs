@@ -6,13 +6,11 @@ using UnityEngine;
 
 public class Enemy : MonoBehaviour
 {
-    public GameObject[] Bits;
+    public DeathSpawner DeathSpawner;
 
     public void Die()
     {
-        Bits.ToList().ForEach(bit => {
-            GameObject.Instantiate(bit, gameObject.transform.position, gameObject.transform.rotation);
-        });
+        GameObject.Instantiate(DeathSpawner, gameObject.transform.position, gameObject.transform.rotation);
         GameObject.Destroy(gameObject);
     }
 }

@@ -10,6 +10,7 @@ public class PlayerController : MonoBehaviour
 
     public float ChargeSpeed = 10.0f;
     public float ChargeTime = 1.0f;
+    public float ChargeRecharge = 1.0f;
 
     public Rigidbody2D Rigidbody2D;
 
@@ -17,8 +18,12 @@ public class PlayerController : MonoBehaviour
     protected float _inputHorizontal;
 
     protected bool _blockInput;
+    protected bool _screenShakeOnHit = true;
 
-    public Animator Animator;
+    protected float _nextChargeTime;
+
+    public Animator ShipAnimator;
+    public Animator LightAnimator;
     public CameraController CameraController;
     public Transform RaycastPoint;
 
@@ -26,14 +31,24 @@ public class PlayerController : MonoBehaviour
 
     private void Update()
     {
-        if(_blockInput)
+        // Throttle speed
+        var goingTooFast = Rigidbody2D.velocity.magnitude > MaxSpeed;
+        if (goingTooFast)
+        {
+            Rigidbody2D.velocity = Rigidbody2D.velocity.normalized * MaxSpeed;
+        }
+
+        var canCharge = Time.time > _nextChargeTime;
+        LightAnimator.SetBool("TurnOn", canCharge);
+
+        if (_blockInput)
         {
             return;
         }
 
         // Move forward
         _inputVertical = Mathf.Max(Input.GetAxis("Vertical"), -0.5f);
-        Animator.SetBool("Swimming", _inputVertical != 0.0f);
+        ShipAnimator.SetBool("Swimming", _inputVertical != 0.0f);
 
         var direction = gameObject.transform.up * _inputVertical;
         Rigidbody2D.AddForce(direction);
@@ -45,25 +60,18 @@ public class PlayerController : MonoBehaviour
         var torque = -_inputHorizontal * TurnSpeed;
         Rigidbody2D.angularVelocity = torque;
 
-        Animator.SetBool("TurnRight", _inputHorizontal > 0.0f);
-        Animator.SetBool("TurnLeft", _inputHorizontal < 0.0f);
-        Animator.SetBool("Turning", _inputHorizontal != 0.0f);
-
-        // Throttle speed
-        var goingTooFast = Rigidbody2D.velocity.magnitude > MaxSpeed;
-        if(goingTooFast)
-        {
-            Rigidbody2D.velocity = Rigidbody2D.velocity.normalized * MaxSpeed;
-        }
+        ShipAnimator.SetBool("TurnRight", _inputHorizontal > 0.0f);
+        ShipAnimator.SetBool("TurnLeft", _inputHorizontal < 0.0f);
+        ShipAnimator.SetBool("Turning", _inputHorizontal != 0.0f);
 
         // Charge
-        if (Input.GetKeyDown(KeyCode.Space))
+        if (Input.GetKeyDown(KeyCode.Space) && canCharge)
         {
             // Don't allow the player to charge into non enemies if they are too close
             var hit = Physics2D.Raycast(RaycastPoint.position, RaycastPoint.up, 2.0f);
-            var canCharge = hit.transform == null || hit.transform.name != "Island";
+            var wontHitTerrain = hit.transform == null || hit.transform.name != "Island";
 
-            if(canCharge)
+            if (wontHitTerrain)
             {
                 Charge();
             }
@@ -72,7 +80,7 @@ public class PlayerController : MonoBehaviour
 
     private void OnCollisionEnter2D(Collision2D collision)
     {
-        if(collision.transform.gameObject.name == "Island")
+        if(_screenShakeOnHit)
         {
             CameraController.ScreenShake();
         }
@@ -81,11 +89,12 @@ public class PlayerController : MonoBehaviour
     public void Charge()
     {
         StartCoroutine(Charge_Coroutine());
+        _nextChargeTime = Time.time + ChargeRecharge;
     }
 
     protected IEnumerator Charge_Coroutine()
     {
-        Animator.SetBool("Charging", true);
+        ShipAnimator.SetBool("Charging", true);
 
         _blockInput = true;
         Rigidbody2D.angularVelocity = 0.0f;
@@ -112,6 +121,7 @@ public class PlayerController : MonoBehaviour
                 StartCoroutine(SlowTime_Coroutine());
                 if(enemy)
                 {
+                    _screenShakeOnHit = false;
                     var effect = GameObject.Instantiate(HitEffectPrefab, enemy.transform.position, Quaternion.identity);
                     GameObject.Destroy(effect, 1.0f);
                     enemy.Die();
@@ -121,6 +131,7 @@ public class PlayerController : MonoBehaviour
             yield return null;
         }
 
+        _screenShakeOnHit = true;
         CameraController.LeadDistance = 2.0f;
         CameraController.CameraSize = 4.5f;
         Rigidbody2D.freezeRotation = false;
@@ -128,7 +139,7 @@ public class PlayerController : MonoBehaviour
         Rigidbody2D.velocity = chargeDirection * initialVelocity.magnitude;
         _blockInput = false;
 
-        Animator.SetBool("Charging", false);
+        ShipAnimator.SetBool("Charging", false);
     }
 
     protected IEnumerator SlowTime_Coroutine()
