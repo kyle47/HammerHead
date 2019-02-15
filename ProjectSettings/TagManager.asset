@@ -13,7 +13,7 @@ TagManager:
   - UI
   - 
   - 
-  - 
+  - <LayerName>
   - 
   - 
   - 
@@ -38,9 +38,24 @@ TagManager:
   - 
   - 
   m_SortingLayers:
+  - name: Wake
+    uniqueID: 573155137
+    locked: 0
+  - name: Island
+    uniqueID: 357685117
+    locked: 0
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: Base
+    uniqueID: 2158787159
+    locked: 0
   - name: Light
     uniqueID: 189918265
+    locked: 0
+  - name: FX-High
+    uniqueID: 3748905125
+    locked: 0
+  - name: Smoke
+    uniqueID: 3656371207
     locked: 0

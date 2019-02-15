@@ -28,6 +28,9 @@ public class PlayerController : MonoBehaviour
     public Transform RaycastPoint;
 
     public GameObject HitEffectPrefab;
+    public GameObject SandEffectPrefab;
+
+    protected float _sandEffectDebounce;
 
     private void Update()
     {
@@ -83,6 +86,16 @@ public class PlayerController : MonoBehaviour
         if(_screenShakeOnHit)
         {
             CameraController.ScreenShake();
+        }
+
+        if(collision.collider.gameObject.name == "Island")
+        {
+            if(Time.time > _sandEffectDebounce)
+            {
+                var effect = GameObject.Instantiate(SandEffectPrefab, collision.contacts[0].point, gameObject.transform.rotation);
+                GameObject.Destroy(effect, 1.0f);
+                _sandEffectDebounce = Time.time + .2f;
+            }
         }
     }
 
